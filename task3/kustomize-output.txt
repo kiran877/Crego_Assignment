@@ -1,0 +1,112 @@
+# Mock Kustomize Build output for tenant: acme-corp
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acme-corp
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    iam.gke.io/gcp-service-account: sa-acme-corp@my-gcp-project.iam.gserviceaccount.com
+  name: acme-corp-sa
+  namespace: acme-corp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-reader
+  namespace: acme-corp
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: secret-reader-binding
+  namespace: acme-corp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: secret-reader
+subjects:
+- kind: ServiceAccount
+  name: acme-corp-sa
+  namespace: acme-corp
+---
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: gcp-store
+  namespace: acme-corp
+spec:
+  provider:
+    gcpsm:
+      auth:
+        workloadIdentity:
+          serviceAccountRef:
+            name: acme-corp-sa
+      projectID: my-gcp-project
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: db-credentials
+  namespace: acme-corp
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: SecretStore
+    name: gcp-store
+  target:
+    creationPolicy: Owner
+    name: tenant-db-credentials
+  data:
+  - remoteRef:
+      key: tenant-acme-corp-credentials
+      property: username
+    secretKey: username
+  - remoteRef:
+      key: tenant-acme-corp-credentials
+      property: password
+    secretKey: password
+  - remoteRef:
+      key: tenant-acme-corp-credentials
+      property: database
+    secretKey: database
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-egress-isolation
+  namespace: acme-corp
+spec:
+  egress:
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+  - ports:
+    - port: 5432
+      protocol: TCP
+    to:
+    - ipBlock:
+        cidr: 10.152.0.10/32
+  podSelector: {}
+  policyTypes:
+  - Egress

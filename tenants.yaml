@@ -1,0 +1,4 @@
+tenants:
+  - name: acme-corp
+    environment: dev
+    db_instance: main-instance

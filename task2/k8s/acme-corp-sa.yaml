@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "acme-corp-sa"
+  namespace: "acme-corp"
+  annotations:
+    # Workload Identity Annotation to bind GKE SA to GCP SA
+    iam.gke.io/gcp-service-account: "sa-acme-corp@project-6e2b023f-2190-401a-aa7.iam.gserviceaccount.com"

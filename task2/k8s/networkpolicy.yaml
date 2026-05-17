@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-egress-isolation
+  namespace: "{{TENANT_NAME}}"
+spec:
+  podSelector: {} # Selects all pods in this namespace
+  policyTypes:
+  - Egress
+  egress:
+  # 1. Allow Egress to Cluster DNS (kube-dns) for name resolution
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+  # 2. Allow Egress to the Cloud SQL PostgreSQL Database
+  # This can be configured either via the database private IP CIDR or the database port (5432)
+  - to:
+    - ipBlock:
+        cidr: "{{DATABASE_PRIVATE_IP}}/32" # Restrict to specific database host IP
+    ports:
+    - protocol: TCP
+      port: 5432
+
+  # 3. Allow Egress to GCP APIs (Only required if using Cloud SQL Auth Proxy sidecar)
+  # - to:
+  #   - ipBlock:
+  #       cidr: 0.0.0.0/0 # Cloud SQL APIs use global Google IPs
+  #   ports:
+  #   - protocol: TCP
+  #     port: 443

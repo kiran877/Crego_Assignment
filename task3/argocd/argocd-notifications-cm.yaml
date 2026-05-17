@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  # 1. Integration Settings: Slack Configuration
+  # Points to a Slack token stored in 'argocd-notifications-secret'
+  service.slack: |
+    token: $slack-token
+
+  # 2. Notification Templates
+  # Defines the Slack message format using templates
+  template.app-degraded: |
+    email:
+      subject: Application {{.app.metadata.name}} is Degraded
+    slack:
+      attachments: |
+        [{
+          "title": "ArgoCD Application Degraded",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "color": "#FF0000",
+          "fields": [
+            {
+              "title": "Application Name",
+              "value": "{{.app.metadata.name}}",
+              "short": true
+            },
+            {
+              "title": "Environment",
+              "value": "{{index .app.metadata.labels "environment"}}",
+              "short": true
+            },
+            {
+              "title": "Health Status",
+              "value": "{{.app.status.health.status}}",
+              "short": true
+            },
+            {
+              "title": "Sync Status",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            }
+          ],
+          "text": "Application *{{.app.metadata.name}}* is now in a *Degraded* health state. Action required!",
+          "footer": "ArgoCD Notifications"
+        }]
+
+  template.app-out-of-sync: |
+    email:
+      subject: Application {{.app.metadata.name}} is Out of Sync
+    slack:
+      attachments: |
+        [{
+          "title": "ArgoCD Application Out of Sync",
+          "title_link": "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}",
+          "color": "#FFA500",
+          "fields": [
+            {
+              "title": "Application Name",
+              "value": "{{.app.metadata.name}}",
+              "short": true
+            },
+            {
+              "title": "Environment",
+              "value": "{{index .app.metadata.labels "environment"}}",
+              "short": true
+            },
+            {
+              "title": "Sync Status",
+              "value": "{{.app.status.sync.status}}",
+              "short": true
+            }
+          ],
+          "text": "Application *{{.app.metadata.name}}* is *OutOfSync* with the Git repository. Review PRs or triggers.",
+          "footer": "ArgoCD Notifications"
+        }]
+
+  # 3. Triggers configuration
+  # Decides when a notification is sent and associates it with templates
+  trigger.on-degraded: |
+    - when: app.status.health.status == 'Degraded'
+      send: [app-degraded]
+  
+  trigger.on-out-of-sync: |
+    - when: app.status.sync.status == 'OutOfSync'
+      send: [app-out-of-sync]

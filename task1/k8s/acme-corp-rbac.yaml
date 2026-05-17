@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "acme-corp"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "acme-corp-sa"
+  namespace: "acme-corp"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secret-reader
+  namespace: "acme-corp"
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: secret-reader-binding
+  namespace: "acme-corp"
+subjects:
+- kind: ServiceAccount
+  name: "acme-corp-sa"
+  namespace: "acme-corp"
+roleRef:
+  kind: Role
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
