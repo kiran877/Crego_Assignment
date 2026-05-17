@@ -2,3 +2,5 @@ tenants:
   - name: acme-corp
     environment: dev
     db_instance: main-instance
+
+# Force GHA trigger validation
