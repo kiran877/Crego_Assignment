@@ -2,7 +2,6 @@ tenants:
   - name: acme-corp
     environment: dev
     db_instance: main-instance
-
-# Force GHA trigger validation
-
-# Testing same tenant at: 16:20:10
+  - name: beta-corp
+    environment: dev
+    db_instance: main-instance
