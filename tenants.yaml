@@ -1,7 +1,8 @@
 tenants:
-  - name: acme-corp
+  - name: beta-corp
     environment: dev
     db_instance: main-instance
-  - name: beta-corp
+  
+  - name: acme-corp
     environment: dev
     db_instance: main-instance
